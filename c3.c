@@ -3,49 +3,50 @@
 #include <string.h>
 #include <stdbool.h>
 
-/*Struct Declarations*/
-typedef struct node {
-    char* val;
-    struct node* next;
-} ll_node;
+typedef enum Token{
+    RETURN=0,
+    SEMICOLON=59,
+    OPEN_BRACE=123,
+    CLOSE_BRACE=125,
+    OPEN_PAREN=40,
+    CLOSE_PAREN=41,
+    NONE=256,
+    END=257
+} token_t;
 
-#define RETURN_KEY "return"
 
 /*Function Declarations*/
-ll_node* lex(FILE* file);
-bool isReturn(char* rChar);
-char* processSingleCharToken(char token);
-char* processMultiCharToken(char* token);
-ll_node* llInit();
-void llAdd(ll_node* head, char* value);
-void llFree(ll_node* head);
 
+bool isReturn(char* rChar);
+int* lex(FILE* file);
 
 int main( int argc, char* argv[] )
 {
+
     FILE* filePtr = fopen("./test_files/return_2.c","r+");
     // FILE* filePtr = fopen(argv[1],"r+"); //open file from beginning
     if (filePtr == NULL) {
         fprintf(stderr, "Cannot open file %s\n", argv[1]);
         return 1;
     }
-    ll_node* lexed = lex(filePtr);        
+    int* lexed = lex(filePtr);        
     if(lexed == NULL)
     {
         fprintf(stderr, "Error Lexing File %s\n", argv[1]);
         return 2;
     }
 
-    ll_node* current = lexed;
-    while(current->next != NULL){
-        printf("%s",current->val);
-        current = current->next;
+    size_t i = 0;
+
+    while(lexed[i] != END){
+        printf("%d\n",lexed[i]);
+        i++;
     }
 
     return 0;
 }
 
-ll_node* lex(FILE* file)
+int* lex(FILE* file)
 {
     int check = fseek(file,0,SEEK_END); //file, offset, position moving to.
     if (check != 0) return NULL;
@@ -56,67 +57,66 @@ ll_node* lex(FILE* file)
     char* fileStringBuffer = (char*) malloc(size * sizeof(char));
     fread(fileStringBuffer, size, 1, file);
     fclose(file);
-    
-    // char* retVal; //pointer to first item in array;
-    ll_node* retVal = NULL;
-    retVal = llInit();
-    retVal->next = NULL;
-    
-    if(retVal == NULL){
-        fprintf(stderr, "Lex Error: Could not allocate memory. Terminating\n");
-        exit(2);
-    }
+
+    int* retVal = NULL;
+
     size_t i = 0;
-    // size_t arrSize = 0;
+    size_t arrSize = 0;
     while (fileStringBuffer[i] != '\0')
     {
+        int* tempArr = calloc(sizeof(int)+arrSize,sizeof(int));
+        if(tempArr == NULL)
+        {
+            exit(2);
+        }
         switch (fileStringBuffer[i])
         {
-            case ';':
-                llAdd(retVal, processSingleCharToken(';'));
+            case SEMICOLON:
+                retVal=tempArr;
+                retVal[arrSize] = SEMICOLON;
+                arrSize++;
                 break;
-            case '{':
-                llAdd(retVal, processSingleCharToken('{'));
+            case OPEN_BRACE:
+                retVal=tempArr;
+                retVal[arrSize] = OPEN_BRACE;
+                arrSize++;
                 break;
-            case '}':
-                llAdd(retVal, processSingleCharToken('}'));
+            case CLOSE_BRACE:
+                retVal=tempArr;
+                retVal[arrSize] = CLOSE_BRACE;
+                arrSize++;
                 break;
-            case '(':
-                llAdd(retVal, processSingleCharToken('('));
+            case OPEN_PAREN:
+                retVal=tempArr;
+                retVal[arrSize] = OPEN_PAREN;
+                arrSize++;
                 break;
-            case ')':
-                llAdd(retVal, processSingleCharToken(')'));
+            case CLOSE_PAREN:
+                retVal=tempArr;
+                retVal[arrSize] = CLOSE_PAREN;
+                arrSize++;
                 break;
             case 'r':
                 if(isReturn(&fileStringBuffer[i]))
                 {
-                    llAdd(retVal, processMultiCharToken(RETURN_KEY));
+                    retVal=tempArr;
+                    retVal[arrSize] = RETURN;
+                    arrSize++;
                 }
                 break;
             default:
                 break;
         }
         i++;
+        free(tempArr);
     }
 
     free(fileStringBuffer);
 
+    retVal = realloc(retVal, arrSize+1);
+    retVal[arrSize+1] = END;
+
     return retVal;
-}
-
-char* processSingleCharToken(char token)
-{
-    char c = token;
-    char* ptr = malloc(1);
-    if(ptr == NULL) return NULL;
-    ptr = &c;
-    return ptr;
-}
-
-char* processMultiCharToken(char* token){
-    char* copy = malloc(strlen(token) + 1);
-    strcpy(token,copy);
-    return copy;
 }
 
 bool isReturn(char* rChar)
@@ -124,38 +124,12 @@ bool isReturn(char* rChar)
     bool retVal = true;
     int i = 0;
 
+    char returnStr[6] = {'r','e','t','u','r','n'};
+
     while( i < 6 ){
-        retVal = (rChar[i] == RETURN_KEY[i]);
+        retVal = (rChar[i] == returnStr[i]);
         i++;
     }
 
     return retVal;
 }
-
-ll_node* llInit(){
-    ll_node* retVal = (ll_node*) malloc(sizeof(ll_node));
-    retVal->val = NULL;
-    retVal->next = NULL;
-    return retVal;
-}
-
-void llAdd(ll_node* head, char* value){
-    if (head->val == NULL){
-        head -> val = value;
-    }
-    printf("%s",value);
-    ll_node* currentNode = head; //set current to head
-    while(currentNode->next != NULL){//move to end of ll
-        currentNode = currentNode -> next;
-    }
-
-    currentNode->next= (ll_node*)malloc(sizeof(ll_node));
-    currentNode = currentNode->next;
-    currentNode->val=value;
-    currentNode->next=NULL;
-}
-
-void llFree(ll_node* head){
-
-}
-
