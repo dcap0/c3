@@ -2,3 +2,6 @@
 *.exe
 *.out
 *.s
+scratch
+scratch.*
+c3
