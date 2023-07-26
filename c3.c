@@ -4,14 +4,14 @@
 #include <stdbool.h>
 
 typedef enum Token{
-    RETURN=0,
+    RETURN=1,
     SEMICOLON=59,
     OPEN_BRACE=123,
     CLOSE_BRACE=125,
     OPEN_PAREN=40,
     CLOSE_PAREN=41,
-    NONE=256,
-    END=257
+    NONE=0,
+    END=3
 } token_t;
 
 
@@ -29,6 +29,7 @@ int main( int argc, char* argv[] )
         fprintf(stderr, "Cannot open file %s\n", argv[1]);
         return 1;
     }
+
     int* lexed = lex(filePtr);        
     if(lexed == NULL)
     {
@@ -37,7 +38,6 @@ int main( int argc, char* argv[] )
     }
 
     size_t i = 0;
-
     while(lexed[i] != END){
         printf("%d\n",lexed[i]);
         i++;
@@ -58,48 +58,44 @@ int* lex(FILE* file)
     fread(fileStringBuffer, size, 1, file);
     fclose(file);
 
+    size_t arrSize = 0;
     int* retVal = NULL;
 
     size_t i = 0;
-    size_t arrSize = 0;
     while (fileStringBuffer[i] != '\0')
     {
-        int* tempArr = calloc(sizeof(int)+arrSize,sizeof(int));
-        if(tempArr == NULL)
-        {
-            exit(2);
-        }
+        int* tempArr =(int*) realloc(retVal,sizeof(int)*(arrSize+1));
         switch (fileStringBuffer[i])
         {
             case SEMICOLON:
-                retVal=tempArr;
+                retVal = tempArr;
                 retVal[arrSize] = SEMICOLON;
                 arrSize++;
                 break;
             case OPEN_BRACE:
-                retVal=tempArr;
+                retVal = tempArr;
                 retVal[arrSize] = OPEN_BRACE;
                 arrSize++;
                 break;
             case CLOSE_BRACE:
-                retVal=tempArr;
+                retVal = tempArr;
                 retVal[arrSize] = CLOSE_BRACE;
                 arrSize++;
                 break;
             case OPEN_PAREN:
-                retVal=tempArr;
+                retVal = tempArr;
                 retVal[arrSize] = OPEN_PAREN;
                 arrSize++;
                 break;
             case CLOSE_PAREN:
-                retVal=tempArr;
+                retVal = tempArr;
                 retVal[arrSize] = CLOSE_PAREN;
                 arrSize++;
                 break;
             case 'r':
                 if(isReturn(&fileStringBuffer[i]))
                 {
-                    retVal=tempArr;
+                    retVal = tempArr;
                     retVal[arrSize] = RETURN;
                     arrSize++;
                 }
@@ -108,13 +104,12 @@ int* lex(FILE* file)
                 break;
         }
         i++;
-        free(tempArr);
     }
 
     free(fileStringBuffer);
 
-    retVal = realloc(retVal, arrSize+1);
-    retVal[arrSize+1] = END;
+    retVal = realloc(retVal, sizeof(int)*(arrSize+1));
+    retVal[arrSize] = END;
 
     return retVal;
 }
