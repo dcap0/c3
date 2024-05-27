@@ -2,23 +2,35 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <regex.h>
 
-typedef enum Token{
+typedef enum Keyword{
     RETURN=1,
+    INT=2,
+    IDENT=3,
     SEMICOLON=59,
     OPEN_BRACE=123,
     CLOSE_BRACE=125,
     OPEN_PAREN=40,
     CLOSE_PAREN=41,
     NONE=0,
-    END=3
-} token_t;
+    END=255
+} keyword_t;
 
+typedef struct Tokens{
+    int* keywords;
+    char* identifiers;
+    int* order;
+} token_t;
 
 /*Function Declarations*/
 
-bool isReturn(char* rChar);
+bool isKeyword(char* rChar, char* token);
 int* lex(FILE* file);
+
+/*Constants*/
+const regex_t int_regex;
+const regex_t ident;
 
 int main( int argc, char* argv[] )
 {
@@ -43,6 +55,8 @@ int main( int argc, char* argv[] )
         i++;
     }
 
+    free(lexed);
+
     return 0;
 }
 
@@ -59,47 +73,54 @@ int* lex(FILE* file)
     fclose(file);
 
     size_t arrSize = 0;
-    int* retVal = NULL;
+    int* keywords = NULL;
+    char* indicators = NULL;
 
     size_t i = 0;
     while (fileStringBuffer[i] != '\0')
     {
-        int* tempArr =(int*) realloc(retVal,sizeof(int)*(arrSize+1));
+        int* tempArr = (int*) realloc(keywords,sizeof(int)*(arrSize+1));
         switch (fileStringBuffer[i])
         {
             case SEMICOLON:
-                retVal = tempArr;
-                retVal[arrSize] = SEMICOLON;
+                keywords = tempArr;
+                keywords[arrSize] = SEMICOLON;
                 arrSize++;
                 break;
             case OPEN_BRACE:
-                retVal = tempArr;
-                retVal[arrSize] = OPEN_BRACE;
+                keywords = tempArr;
+                keywords[arrSize] = OPEN_BRACE;
                 arrSize++;
                 break;
             case CLOSE_BRACE:
-                retVal = tempArr;
-                retVal[arrSize] = CLOSE_BRACE;
+                keywords = tempArr;
+                keywords[arrSize] = CLOSE_BRACE;
                 arrSize++;
                 break;
             case OPEN_PAREN:
-                retVal = tempArr;
-                retVal[arrSize] = OPEN_PAREN;
+                keywords = tempArr;
+                keywords[arrSize] = OPEN_PAREN;
                 arrSize++;
                 break;
             case CLOSE_PAREN:
-                retVal = tempArr;
-                retVal[arrSize] = CLOSE_PAREN;
+                keywords = tempArr;
+                keywords[arrSize] = CLOSE_PAREN;
                 arrSize++;
                 break;
             case 'r':
-                if(isReturn(&fileStringBuffer[i]))
+                if(isKeyword(&fileStringBuffer[i],"return"))
                 {
-                    retVal = tempArr;
-                    retVal[arrSize] = RETURN;
+                    keywords = tempArr;
+                    keywords[arrSize] = RETURN;
                     arrSize++;
                 }
                 break;
+            case 'i':
+                if(isKeyword(&fileStringBuffer[i],"int")){
+                    keywords = tempArr;
+                    keywords[arrSize] = INT;
+                    arrSize++;
+                }
             default:
                 break;
         }
@@ -108,21 +129,19 @@ int* lex(FILE* file)
 
     free(fileStringBuffer);
 
-    retVal = realloc(retVal, sizeof(int)*(arrSize+1));
-    retVal[arrSize] = END;
+    keywords = realloc(keywords, sizeof(int)*(arrSize+1));
+    keywords[arrSize] = END;
 
-    return retVal;
+    return keywords;
 }
 
-bool isReturn(char* rChar)
+bool isKeyword(char* rChar, char* token)
 {
     bool retVal = true;
     int i = 0;
 
-    char returnStr[6] = {'r','e','t','u','r','n'};
-
-    while( i < 6 ){
-        retVal = (rChar[i] == returnStr[i]);
+    while( token[i] != '\0' ){
+        retVal = (rChar[i] == token[i]);
         i++;
     }
 
